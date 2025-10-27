@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pembayaran QRIS</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      text-align: center;
+      padding: 40px;
+    }
+    .card {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 80%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #qris {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>💳 Pembayaran QRIS Dinamis</h2>
+    <input type="number" id="amount" placeholder="Masukkan nominal (Rp)" />
+    <br />
+    <button id="generate">Generate QRIS</button>
+    <div id="loading"></div>
+    <div id="qris"></div>
+  </div>
+
+  <script>
+    document.getElementById("generate").addEventListener("click", async () => {
+      const amount = document.getElementById("amount").value;
+      if (!amount) {
+        alert("Masukkan nominal terlebih dahulu!");
+        return;
+      }
+
+      document.getElementById("loading").innerText = "Memproses...";
+      document.getElementById("qris").innerHTML = "";
+
+      try {
+        const res = await fetch("/server", { // arahkan ke Vercel API
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: parseInt(amount) })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success" && data.qris) {
+          document.getElementById("loading").innerText = "QRIS Berhasil Dibuat ✅";
+          document.getElementById("qris").innerHTML = `
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.qris)}" alt="QRIS" />
+            <p>Total: Rp ${amount}</p>
+          `;
+        } else {
+          document.getElementById("loading").innerText = "Gagal: " + (data.message || "Tidak ada respons");
+        }
+      } catch (err) {
+        document.getElementById("loading").innerText = "Terjadi kesalahan koneksi.";
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
